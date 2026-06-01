@@ -1,0 +1,7 @@
+# Override for Cloudez (or any host where an external panel/proxy terminates SSL).
+# Our nginx serves plain HTTP on a loopback-only port; the host's panel proxy
+# (Let's Encrypt) forwards the domain to http://127.0.0.1:8080.
+services:
+  nginx:
+    ports: !override
+      - "127.0.0.1:8080:80"

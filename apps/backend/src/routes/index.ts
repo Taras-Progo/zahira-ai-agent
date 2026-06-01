@@ -1,0 +1,30 @@
+import { Router } from "express";
+import { authRouter } from "../modules/auth/auth.controller.js";
+import { healthRouter } from "../modules/health/health.controller.js";
+import { chatRouter } from "../modules/chat/chat.controller.js";
+import { servicesRouter } from "../modules/services/services.controller.js";
+import { knowledgeRouter } from "../modules/knowledge/knowledge.controller.js";
+import { conversationsRouter } from "../modules/sessions/conversations.controller.js";
+import { sessionsRouter } from "../modules/sessions/sessions.controller.js";
+import { memoryRouter } from "../modules/memory/memory.controller.js";
+import { bookingsRouter } from "../modules/bookings/bookings.controller.js";
+import { promptsRouter } from "../modules/prompts/prompts.controller.js";
+import { settingsRouter } from "../modules/system-settings/settings.controller.js";
+import { supportRouter } from "../modules/admin/support.controller.js";
+import { analyticsRouter } from "../modules/analytics/analytics.controller.js";
+
+export const apiRouter: Router = Router();
+
+apiRouter.use("/", healthRouter);
+apiRouter.use("/auth", authRouter);
+apiRouter.use("/chat", chatRouter);
+apiRouter.use("/services", servicesRouter);
+apiRouter.use("/knowledge", knowledgeRouter);
+apiRouter.use("/conversations", conversationsRouter);
+apiRouter.use("/sessions", sessionsRouter);
+apiRouter.use("/memory", memoryRouter);
+apiRouter.use("/bookings", bookingsRouter);
+apiRouter.use("/prompts", promptsRouter);
+apiRouter.use("/settings", settingsRouter);
+apiRouter.use("/support", supportRouter);
+apiRouter.use("/analytics", analyticsRouter);

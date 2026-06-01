@@ -1,0 +1,195 @@
+================================================================================
+ZAHIRA — BASE DE CONHECIMENTO DE SERVIÇOS (USO DO ASSISTENTE DE IA WHATSAPP)
+================================================================================
+Arquivo: docs/ai/zahira-services-knowledge.txt
+Gerado em: 2026-05-26 (America/Sao_Paulo)
+Fontes (tabelas): service_categories, services, professional_services, professionals
+Total de categorias ativas/públicas: 1
+Total de serviços ativos/públicos: 4
+--------------------------------------------------------------------------------
+REGRAS DE USO PELO ASSISTENTE DE IA (LEIA ANTES DE RESPONDER)
+--------------------------------------------------------------------------------
+- Este arquivo é apenas explicativo/de apoio. O banco de dados é sempre a fonte
+  da verdade. Preços, durações, disponibilidade, profissionais e horários
+  precisam ser consultados em tempo real via fluxo oficial.
+- A IA NÃO deve inventar preços, durações, disponibilidade, contraindicações,
+  promessas clínicas ou nomes de profissionais.
+- A IA NÃO deve confirmar agendamentos. O agendamento é feito pelo fluxo
+  determinístico oficial (booking flow).
+- A IA NÃO deve prometer disponibilidade ("temos horário amanhã"). Sempre
+  encaminhar para o fluxo de agendamento, que consulta a agenda real.
+- A IA deve encaminhar para atendimento humano (handoff) quando:
+    * o cliente fizer perguntas médicas, clínicas ou de diagnóstico;
+    * mencionar gravidez, lesão, dor intensa, condição de saúde, pós-cirúrgico;
+    * pedir negociação de preço, reclamar ou demonstrar insatisfação;
+    * o caso for ambíguo, longo, confuso, ou fora do escopo dos serviços.
+- Use linguagem acolhedora, simples e brasileira. Sem jargão médico.
+- Use os SERVICE_ID e CATEGORY_ID deste arquivo apenas como referência para
+  o backend mapear nomes ↔ serviços. Não exponha esses IDs ao cliente.
+================================================================================
+CATEGORY: Corpo
+CATEGORY_ID: 63cd5115-361d-406c-97b5-2edf91c74c6a
+CATEGORY_DESCRIPTION: Serviços corporais
+================================================================================
+CATEGORY_OVERVIEW:
+A categoria "Corpo" reúne os serviços voltados ao bem-estar corporal: massagens,
+técnicas de relaxamento, alívio de tensões musculares, estímulo da circulação
+e cuidados estéticos relacionados ao corpo (como o bronzeamento). É procurada
+por clientes que querem relaxar, aliviar incômodos do dia a dia, melhorar a
+sensação de leveza no corpo ou cuidar da aparência da pele.
+COMMON_CLIENT_INTENTS:
+- Relaxar e desestressar após semana cansativa.
+- Aliviar tensão muscular (pescoço, ombros, lombar).
+- Reduzir sensação de inchaço / retenção de líquidos.
+- Cuidar do corpo de forma estética (ex.: bronzeamento).
+- Manutenção do bem-estar como rotina de autocuidado.
+- Presentear alguém com uma experiência de relaxamento.
+PRE_SCREENING_QUESTIONS:
+1. Você busca algo mais relaxante ou algo para aliviar uma tensão específica?
+2. Tem alguma região do corpo que está incomodando mais (costas, pernas, etc.)?
+3. É a primeira vez que você faria esse tipo de serviço aqui na Zahira?
+4. Você prefere algo mais focado em bem-estar/relaxamento ou em estética?
+5. Tem alguma preferência de horário (manhã, tarde ou noite) para eu já te
+   ajudar a ver as opções?
+(Se o cliente mencionar dor forte, lesão, gravidez ou condição de saúde,
+encaminhar para atendimento humano em vez de recomendar serviço.)
+--------------------------------------------------------------------------------
+SERVICES_IN_THIS_CATEGORY
+--------------------------------------------------------------------------------
+SERVICE: Bronze Maquina
+SERVICE_ID: 5accd57a-4bbf-4564-bed9-66bae7146e0f
+CATEGORY: Corpo
+DURATION: 90 min
+PRICE: R$ 70,00
+PROMOTIONAL_PRICE: não informado
+HAS_AVAILABLE_PROFESSIONALS: true
+DESCRIPTION_FROM_DATABASE:
+Bronze Maquina
+DETAILED_AI_EXPLANATION:
+O Bronze Máquina é um serviço estético corporal voltado para quem deseja
+uniformizar e realçar o tom da pele com bronzeamento feito por equipamento
+próprio na Zahira. É uma opção prática para clientes que querem aquele aspecto
+"de pele bronzeada" sem precisar de longa exposição ao sol. Costuma ser
+procurado antes de viagens, eventos, fotos ou simplesmente como cuidado
+estético de rotina. A sessão dura cerca de 90 minutos.
+WHEN_TO_RECOMMEND:
+- Cliente menciona querer ficar bronzeado(a).
+- Cliente quer "pegar uma corzinha" antes de viagem, casamento, evento, foto.
+- Cliente busca cuidado estético da pele relacionado a tom/cor.
+WHEN_TO_ROUTE_TO_HUMAN:
+- Dúvidas sobre tipo de pele, alergia, uso de medicamentos, gravidez.
+- Perguntas sobre durabilidade, cuidados pós-bronze, contraindicações.
+- Pedido de desconto, negociação ou reclamação.
+- Qualquer dúvida clínica/dermatológica.
+BOOKING_GUIDANCE:
+Se o cliente quiser agendar, encaminhar para o fluxo de agendamento oficial.
+Não confirmar data, horário ou disponibilidade pelo chat.
+SUGGESTED_AI_TONE:
+"O Bronze Máquina é uma forma prática de deixar a pele com um tom bronzeado
+uniforme, ótimo antes de viagens ou eventos ✨ Quer que eu te direcione para
+ver os horários disponíveis?"
+--------------------------------------------------------------------------------
+SERVICE: Drenagem Linfática
+SERVICE_ID: 87194376-a7e8-4345-8278-c5218e2810dc
+CATEGORY: Corpo
+DURATION: 60 min
+PRICE: R$ 147,00
+PROMOTIONAL_PRICE: não informado
+HAS_AVAILABLE_PROFESSIONALS: true
+DESCRIPTION_FROM_DATABASE:
+A drenagem linfática é uma técnica de massagem que trabalha o sistema
+linfático, estimulando-o a trabalhar de forma rápida, otimizando a circulação
+e eliminando o acúmulo de líquidos.
+DETAILED_AI_EXPLANATION:
+A Drenagem Linfática é uma técnica de massagem suave e ritmada que ajuda o
+corpo a estimular a circulação e reduzir a sensação de inchaço e retenção de
+líquidos. É bastante procurada por quem sente as pernas pesadas, percebe
+inchaço ao fim do dia ou busca uma sensação de leveza no corpo. A sessão dura
+cerca de 60 minutos e é conduzida por profissional habilitado.
+WHEN_TO_RECOMMEND:
+- Cliente relata sensação de inchaço, pernas pesadas ou retenção de líquidos.
+- Cliente busca bem-estar e leveza corporal como rotina de autocuidado.
+- Cliente quer combinar com cuidado estético/manutenção.
+WHEN_TO_ROUTE_TO_HUMAN:
+- Gravidez, pós-operatório, condições circulatórias, varizes severas,
+  histórico de trombose ou qualquer condição de saúde.
+- Indicação médica específica ou prescrição.
+- Dúvidas sobre frequência ideal, número de sessões, resultados.
+- Pedidos de pacote/preço especial/negociação.
+BOOKING_GUIDANCE:
+Se o cliente quiser agendar, encaminhar para o fluxo de agendamento oficial.
+Não prometer horário nem profissional específico.
+SUGGESTED_AI_TONE:
+"A Drenagem Linfática costuma ser ótima quando a gente sente aquele inchaço
+ou peso nas pernas 💆 Quer que eu já te leve para ver os horários?"
+--------------------------------------------------------------------------------
+SERVICE: Massagem Relaxante
+SERVICE_ID: b6ad789c-64ed-40ac-8e21-146249450321
+CATEGORY: Corpo
+DURATION: 60 min
+PRICE: R$ 127,00
+PROMOTIONAL_PRICE: não informado
+HAS_AVAILABLE_PROFESSIONALS: true
+DESCRIPTION_FROM_DATABASE:
+Massagem Relaxante
+DETAILED_AI_EXPLANATION:
+A Massagem Relaxante é uma massagem corporal com movimentos suaves e ritmados,
+pensada para aliviar o estresse do dia a dia, soltar tensões leves e
+proporcionar uma sensação geral de bem-estar e tranquilidade. É uma boa porta
+de entrada para quem nunca fez massagem na Zahira e quer um momento de
+autocuidado sem foco em tratamento específico. A sessão dura cerca de 60
+minutos.
+WHEN_TO_RECOMMEND:
+- Cliente quer relaxar, desestressar, "fugir da correria".
+- Cliente busca presente/experiência de bem-estar.
+- Primeira massagem do cliente, sem queixa clínica específica.
+WHEN_TO_ROUTE_TO_HUMAN:
+- Cliente relata dor forte, lesão, condição de saúde ou gravidez.
+- Cliente quer massagem terapêutica/clínica específica (nesse caso, considere
+  primeiro sugerir a "Massagem Terapêutica" e, se houver dúvida clínica,
+  encaminhar para humano).
+- Negociação de preço, pacotes ou reclamações.
+BOOKING_GUIDANCE:
+Se o cliente quiser agendar, encaminhar para o fluxo de agendamento oficial.
+SUGGESTED_AI_TONE:
+"A Massagem Relaxante é perfeita pra dar aquela pausa na correria e relaxar
+de verdade 😊 Quer que eu te mostre os horários disponíveis?"
+--------------------------------------------------------------------------------
+SERVICE: Massagem Terapeutica
+SERVICE_ID: 7ee5e1cb-86b6-4cf2-a5b3-387887088555
+CATEGORY: Corpo
+DURATION: 60 min
+PRICE: R$ 147,00
+PROMOTIONAL_PRICE: não informado
+HAS_AVAILABLE_PROFESSIONALS: true
+DESCRIPTION_FROM_DATABASE:
+Indicada para quem sofre com dores musculares, lombares e no nervo ciático.
+A técnica proporciona alívio e tratamento
+DETAILED_AI_EXPLANATION:
+A Massagem Terapêutica é uma massagem com foco em aliviar tensões musculares
+mais marcadas, como incômodos nas costas, lombar e regiões de muita tensão do
+dia a dia (postura, computador, esforço repetitivo). Costuma ser procurada por
+clientes que já sentem o corpo "travado" e querem alívio. A sessão dura cerca
+de 60 minutos e é conduzida por profissional habilitado.
+Atenção: a IA NÃO deve diagnosticar nem afirmar que a massagem "cura" qualquer
+condição. Se houver suspeita de lesão, dor intensa, problema clínico ou
+indicação médica, encaminhar para atendimento humano.
+WHEN_TO_RECOMMEND:
+- Cliente menciona tensão muscular, "nó" nas costas, ombros pesados.
+- Cliente quer algo mais firme que a Massagem Relaxante, com foco em alívio.
+- Cliente já fez antes e quer manutenção.
+WHEN_TO_ROUTE_TO_HUMAN:
+- Cliente descreve dor intensa, lesão, acidente, pós-cirúrgico, gravidez,
+  problema de coluna ou ciático com diagnóstico.
+- Cliente pede orientação clínica ou número de sessões necessárias.
+- Cliente pergunta sobre contraindicações específicas.
+- Negociação, reclamação ou caso ambíguo.
+BOOKING_GUIDANCE:
+Se o cliente quiser agendar, encaminhar para o fluxo de agendamento oficial.
+Não prometer alívio garantido nem indicar a massagem como tratamento médico.
+SUGGESTED_AI_TONE:
+"A Massagem Terapêutica é indicada para quem está com aquela tensão mais
+forte nas costas ou ombros 💆 Quer que eu te direcione para ver os horários?"
+================================================================================
+FIM DO ARQUIVO
+================================================================================

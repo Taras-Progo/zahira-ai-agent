@@ -1,0 +1,25 @@
+{
+  "name": "zahira-ai-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zahira AI Agent - Portuguese-only AI-powered WhatsApp assistant platform",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @zahira/backend prisma:generate",
+    "db:migrate": "pnpm --filter @zahira/backend prisma:migrate",
+    "db:seed": "pnpm --filter @zahira/backend prisma:seed",
+    "db:deploy": "pnpm --filter @zahira/backend prisma:deploy"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

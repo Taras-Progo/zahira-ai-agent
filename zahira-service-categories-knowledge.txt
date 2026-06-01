@@ -1,0 +1,129 @@
+ZAHIRA — BASE DE CONHECIMENTO DE CATEGORIAS DE SERVIÇO (REFERÊNCIA PARA IA)
+============================================================================
+
+Idioma: Português (Brasil)
+Uso: arquivo de apoio para o assistente de IA no WhatsApp. NÃO é fonte da verdade.
+Fonte da verdade: banco de dados (tabelas public.service_categories e public.services).
+Gerado em: 2026-05-26 01:25 UTC
+Tabelas-fonte: service_categories, services
+Filtro aplicado: somente categorias com is_public = true e serviços com is_active = true AND is_public = true.
+
+RESUMO
+------
+- Total de categorias públicas incluídas: 1
+- Total de serviços ativos e públicos incluídos: 4
+- Categorias ativas porém NÃO públicas (excluídas conforme regra): 7
+  (Cabelos, Estética & Imagem, Masculino, Mente, Performance, Saúde, Tratamentos Específicos)
+- Observação: vários serviços ativos/públicos existem em categorias não-públicas
+  e por isso NÃO aparecem neste arquivo. A IA deve sempre confirmar disponibilidade
+  via o fluxo determinístico de booking, nunca por este documento.
+
+REGRAS GERAIS PARA A IA (LEIA ANTES DE USAR)
+--------------------------------------------
+- A IA NÃO deve inventar preços, durações, disponibilidade, contraindicações,
+  efeitos clínicos, nomes de profissionais ou horários. Use apenas o que está aqui
+  e, para qualquer ação real (preço atual, agenda, agendamento), use o fluxo oficial.
+- A IA NÃO confirma agendamento. Confirmar agendamento é responsabilidade exclusiva
+  do fluxo determinístico de booking (resolver + select-entry-service + booking).
+- Este arquivo é APENAS contexto explicativo / educativo para conversa natural.
+- Se o cliente perguntar algo médico, clínico, contraindicação, gravidez, condição
+  de saúde, lesão, pós-operatório, ou similar → encaminhar para atendimento humano.
+- Se o cliente quiser agendar um serviço específico → encaminhar para o fluxo de
+  booking (não tentar reservar pela conversa).
+- Se o cliente estiver indeciso → fazer 1 ou 2 perguntas curtas de pré-triagem
+  e então sugerir 1 a 3 opções, sem prometer disponibilidade.
+- Preços e durações neste arquivo podem ficar desatualizados. Quando o cliente
+  pedir preço final, sempre dizer algo como: "vou confirmar o valor atualizado
+  pra você" e seguir o fluxo oficial.
+
+
+============================================================================
+CATEGORY: Corpo
+CATEGORY_ID: 63cd5115-361d-406c-97b5-2edf91c74c6a
+DESCRIPTION: Serviços corporais
+STATUS: ativa, pública
+
+AI_EXPLANATION:
+A categoria Corpo reúne serviços voltados ao cuidado corporal, bem-estar e
+estética do corpo. Inclui massagens (relaxante e terapêutica), drenagem
+linfática e bronzeamento. É indicada para quem busca relaxar, aliviar
+tensões musculares, melhorar circulação/retenção de líquidos ou cuidar
+da aparência da pele do corpo.
+
+CUSTOMER_INTENTS:
+- relaxar e aliviar o estresse do dia a dia
+- aliviar dores musculares, tensão nas costas, lombar ou nervo ciático
+- estimular circulação e reduzir inchaço/retenção de líquidos
+- cuidar da estética corporal (ex.: bronzeamento)
+- conhecer as opções disponíveis antes de decidir
+
+PRE_SCREENING_QUESTIONS:
+- Você está buscando algo mais para relaxar ou para aliviar uma dor/tensão específica?
+- É um cuidado pontual ou você gostaria de algo recorrente?
+- Você já fez esse tipo de serviço antes ou seria a primeira vez?
+
+SERVICES:
+
+1. Bronze Maquina
+   SERVICE_ID: 5accd57a-4bbf-4564-bed9-66bae7146e0f
+   DURATION: 90 min
+   PRICE: R$ 70,00
+   PROMOTIONAL_PRICE: (não informado)
+   STATUS: ativo, público
+   DESCRIPTION: Bronze Maquina.
+
+2. Drenagem Linfática
+   SERVICE_ID: 87194376-a7e8-4345-8278-c5218e2810dc
+   DURATION: 60 min
+   PRICE: R$ 147,00
+   PROMOTIONAL_PRICE: (não informado)
+   STATUS: ativo, público
+   DESCRIPTION: A drenagem linfática é uma técnica de massagem que trabalha
+   o sistema linfático, estimulando-o a trabalhar de forma rápida, otimizando
+   a circulação e eliminando o acúmulo de líquidos.
+
+3. Massagem Relaxante
+   SERVICE_ID: b6ad789c-64ed-40ac-8e21-146249450321
+   DURATION: 60 min
+   PRICE: R$ 127,00
+   PROMOTIONAL_PRICE: (não informado)
+   STATUS: ativo, público
+   DESCRIPTION: Massagem voltada ao relaxamento geral do corpo e alívio do estresse.
+
+4. Massagem Terapeutica
+   SERVICE_ID: 7ee5e1cb-86b6-4cf2-a5b3-387887088555
+   DURATION: 60 min
+   PRICE: R$ 147,00
+   PROMOTIONAL_PRICE: (não informado)
+   STATUS: ativo, público
+   DESCRIPTION: Indicada para quem sofre com dores musculares, lombares e no
+   nervo ciático. A técnica proporciona alívio e tratamento.
+
+AI_ROUTING_GUIDANCE:
+- Se o cliente pedir informação geral sobre a categoria: explicar brevemente
+  os 4 serviços acima, em linguagem simples, sem prometer disponibilidade.
+- Se o cliente disser "quero relaxar / estou estressado(a)": sugerir Massagem
+  Relaxante; mencionar Drenagem Linfática como opção se ele(a) também relatar
+  inchaço ou retenção.
+- Se o cliente relatar "dor nas costas / dor muscular / ciático": sugerir
+  Massagem Terapêutica e perguntar há quanto tempo sente a dor.
+- Se o cliente perguntar sobre bronzeamento, pele, estética corporal: sugerir
+  Bronze Máquina e explicar que é um bronzeamento feito por aparelho.
+- Se o cliente escolher um serviço e pedir para agendar: encaminhar para o
+  fluxo oficial de booking (não confirmar horário pela conversa).
+- Se o cliente perguntar sobre gravidez, varizes, trombose, pós-cirúrgico,
+  câncer, hipertensão, lesão recente, medicação ou qualquer contraindicação:
+  NÃO responder clinicamente, encaminhar para atendimento humano.
+- Se o cliente estiver indeciso: fazer no máximo 2 perguntas das
+  PRE_SCREENING_QUESTIONS antes de sugerir.
+
+============================================================================
+ENCERRAMENTO
+------------
+Este arquivo cobre apenas o que está marcado como público no banco de dados
+no momento da geração. Demais categorias existem internamente (Cabelos,
+Masculino, Estética & Imagem, Mente, Performance, Saúde, Tratamentos
+Específicos), mas estão como is_public = false e portanto NÃO devem ser
+oferecidas proativamente pela IA até serem publicadas. Se o cliente citar
+explicitamente um serviço dessas áreas, encaminhar para atendimento humano
+ou para o fluxo de busca oficial.
