@@ -28,39 +28,45 @@ logger.info(`Workers started in-process (${workers.length} queues)`);
 
 // NODE_SOCKET (Cloudez) takes precedence; otherwise listen on a TCP port.
 const socketPath = process.env.NODE_SOCKET;
+// Under OpenLiteSpeed/lsnode the listen() call is intercepted and bridged to
+// LiteSpeed; lsnode owns the actual socket, so we must not touch a socket file.
+const underLsnode = process.env.ZAHIRA_LSNODE === "1";
 
 function onReady(target: string) {
   const served = existsSync(staticDir) ? "with dashboard" : "API only";
   logger.info(`Zahira combined server listening on ${target} (${served})`);
 }
 
-const server = socketPath
-  ? (() => {
-      // Ensure the socket's parent directory exists (managed hosts may not
-      // pre-create it before our process launches).
-      try {
-        mkdirSync(dirname(socketPath), { recursive: true });
-      } catch {
-        /* directory may already exist */
-      }
-      if (existsSync(socketPath)) {
-        try {
-          unlinkSync(socketPath);
-        } catch {
-          /* ignore stale socket removal errors */
-        }
-      }
-      const s = app.listen(socketPath, () => {
-        try {
-          chmodSync(socketPath, 0o777);
-        } catch {
-          /* nginx may already have access */
-        }
-        onReady(`socket ${socketPath}`);
-      });
-      return s;
-    })()
-  : app.listen(env.BACKEND_PORT, () => onReady(`port ${env.BACKEND_PORT}`));
+let server: ReturnType<typeof app.listen>;
+
+if (underLsnode) {
+  // lsnode intercepts listen(); the argument is effectively ignored.
+  server = app.listen(socketPath ?? 0, () => onReady("lsnode (LiteSpeed LSAPI)"));
+} else if (socketPath) {
+  // Ensure the socket's parent directory exists, then bind a real Unix socket.
+  try {
+    mkdirSync(dirname(socketPath), { recursive: true });
+  } catch {
+    /* directory may already exist */
+  }
+  if (existsSync(socketPath)) {
+    try {
+      unlinkSync(socketPath);
+    } catch {
+      /* ignore stale socket removal errors */
+    }
+  }
+  server = app.listen(socketPath, () => {
+    try {
+      chmodSync(socketPath, 0o777);
+    } catch {
+      /* the proxy may already have access */
+    }
+    onReady(`socket ${socketPath}`);
+  });
+} else {
+  server = app.listen(env.BACKEND_PORT, () => onReady(`port ${env.BACKEND_PORT}`));
+}
 
 async function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down combined server`);
