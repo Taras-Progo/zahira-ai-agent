@@ -1,7 +1,13 @@
 import { useAuthStore } from "@/store/auth";
 
+// In production the dashboard is served from the same origin as the API, so an
+// empty base means requests go to relative `/api/...`. Locally (separate dev
+// servers) default to the backend on :4000.
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
+  rawApiUrl !== undefined
+    ? rawApiUrl.replace(/\/$/, "")
+    : "http://localhost:4000";
 
 export class ApiError extends Error {
   code: string;

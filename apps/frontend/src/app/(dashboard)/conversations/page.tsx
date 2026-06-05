@@ -23,7 +23,10 @@ export default function ConversationsPage() {
       ) : (
         <div className="grid gap-2">
           {data.map((c) => (
-            <Link key={c.session_id} href={`/conversations/${c.session_id}`}>
+            <Link
+              key={c.session_id}
+              href={`/conversations/detail/?session=${c.session_id}`}
+            >
               <Card className="transition-colors hover:border-primary/40">
                 <CardContent className="flex items-center justify-between p-4">
                   <div>

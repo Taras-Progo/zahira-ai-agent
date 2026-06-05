@@ -1,7 +1,8 @@
 "use client";
 
-import { use } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useConversation } from "@/hooks/queries";
 import { PageHeader, LoadingState } from "@/components/ui/misc";
@@ -10,12 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";
 
-export default function ConversationDetailPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>;
-}) {
-  const { sessionId } = use(params);
+function ConversationDetail() {
+  const params = useSearchParams();
+  const sessionId = params.get("session") ?? "";
   const { data, isLoading } = useConversation(sessionId);
 
   return (
@@ -65,5 +63,13 @@ export default function ConversationDetailPage({
         </Card>
       )}
     </div>
+  );
+}
+
+export default function ConversationDetailPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <ConversationDetail />
+    </Suspense>
   );
 }

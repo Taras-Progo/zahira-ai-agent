@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -7,7 +9,12 @@ import { logger } from "./lib/logger.js";
 import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 
-export function createApp(): Express {
+interface CreateAppOptions {
+  /** Absolute path to the exported frontend (`out/`) to serve as a SPA. */
+  staticDir?: string;
+}
+
+export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
   // Behind Nginx in production: trust the first proxy for correct client IPs.
@@ -24,8 +31,22 @@ export function createApp(): Express {
   app.use(pinoHttp({ logger }));
 
   app.use("/api", apiRouter);
+  // 404 for unknown API routes only (so SPA routes fall through to static).
+  app.use("/api", notFoundHandler);
 
-  app.use(notFoundHandler);
+  // Serve the exported admin dashboard when a static build is provided.
+  if (options.staticDir && existsSync(options.staticDir)) {
+    const staticDir = options.staticDir;
+    app.use(express.static(staticDir, { extensions: ["html"] }));
+    // SPA fallback: any non-asset GET serves the dashboard shell.
+    app.get(/.*/, (req, res, next) => {
+      if (req.method !== "GET") return next();
+      const index = join(staticDir, "index.html");
+      if (existsSync(index)) return res.sendFile(index);
+      return next();
+    });
+  }
+
   app.use(errorHandler);
 
   return app;

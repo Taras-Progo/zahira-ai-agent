@@ -38,3 +38,6 @@ coverage/
 
 # Docker volumes (local)
 docker/volumes/
+
+# Local deploy scripts (contain credentials, host-specific)
+.deploy/
