@@ -19,10 +19,21 @@ const REPO_DIR = process.env.ZAHIRA_REPO_DIR || path.join(APP_BASE, "app");
 const SOCKET =
   process.env.NODE_SOCKET || path.join(APP_BASE, "etc", "nodejs", "nodejs.sock");
 
-const tsx = path.join(REPO_DIR, "node_modules", ".bin", "tsx");
+// Run via the current node + tsx's CLI directly, so we don't depend on PATH or
+// shell shebang resolution. tsx (a backend devDependency) lives under
+// apps/backend/node_modules with pnpm.
+const tsxCli = path.join(
+  REPO_DIR,
+  "apps",
+  "backend",
+  "node_modules",
+  "tsx",
+  "dist",
+  "cli.mjs",
+);
 const entry = path.join(REPO_DIR, "apps", "backend", "src", "combined-server.ts");
 
-const child = spawn(tsx, [entry], {
+const child = spawn(process.execPath, [tsxCli, entry], {
   cwd: REPO_DIR,
   stdio: "inherit",
   env: { ...process.env, NODE_SOCKET: SOCKET, NODE_ENV: "production" },

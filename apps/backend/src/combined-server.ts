@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, unlinkSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.js";
@@ -36,6 +36,13 @@ function onReady(target: string) {
 
 const server = socketPath
   ? (() => {
+      // Ensure the socket's parent directory exists (managed hosts may not
+      // pre-create it before our process launches).
+      try {
+        mkdirSync(dirname(socketPath), { recursive: true });
+      } catch {
+        /* directory may already exist */
+      }
       if (existsSync(socketPath)) {
         try {
           unlinkSync(socketPath);
