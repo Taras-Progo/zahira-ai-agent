@@ -7,6 +7,7 @@ export interface CompletionParams {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  responseFormat?: "json_object";
 }
 
 export interface CompletionResult {

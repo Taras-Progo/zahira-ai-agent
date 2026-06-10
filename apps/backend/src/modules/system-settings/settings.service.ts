@@ -27,6 +27,12 @@ export async function getNumber(key: string, fallback: number): Promise<number> 
   return typeof value === "number" ? value : fallback;
 }
 
+export async function getValue<T>(key: string, fallback: T): Promise<T> {
+  const settings = await getSettings();
+  const value = settings[key];
+  return value === undefined ? fallback : (value as T);
+}
+
 export async function updateSettings(patch: SettingsMap): Promise<SettingsMap> {
   await prisma.$transaction(
     Object.entries(patch).map(([key, value]) =>

@@ -28,6 +28,9 @@ export class OpenAIProvider implements AIProvider {
     const completion = await this.client.chat.completions.create({
       model,
       messages: params.messages,
+      ...(params.responseFormat
+        ? { response_format: { type: params.responseFormat } }
+        : {}),
       ...tokenParams,
     });
 

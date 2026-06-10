@@ -20,6 +20,7 @@ enum Intent {
   greeting
   pricing
   booking
+  opening_hours
   support
   complaint
   menu
@@ -122,6 +123,10 @@ model Session {
   status         SessionStatus @default(ACTIVE)
   mode           String?
   messageCount   Int           @default(0) @map("message_count")
+  qualifyingQuestionCount Int   @default(0) @map("qualifying_question_count")
+  bookingAttemptCount     Int   @default(0) @map("booking_attempt_count")
+  salesPitchCount         Int   @default(0) @map("sales_pitch_count")
+  handoffReason           String? @map("handoff_reason")
   startedAt      DateTime      @default(now()) @map("started_at")
   lastActivityAt DateTime      @default(now()) @map("last_activity_at")
   closedAt       DateTime?     @map("closed_at")

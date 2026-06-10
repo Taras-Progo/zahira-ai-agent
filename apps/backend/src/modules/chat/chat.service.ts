@@ -23,15 +23,25 @@ import * as memoryService from "../memory/memory.service.js";
 import * as settingsService from "../system-settings/settings.service.js";
 import * as bookingsService from "../bookings/bookings.service.js";
 import * as handoffService from "../admin/handoff.service.js";
+import { getOpeningHoursStatus } from "../business-hours/opening-hours.service.js";
 import {
   enqueueAnalytics,
   enqueueMemoryExtraction,
   enqueueSummary,
 } from "../jobs/queues.js";
 import { intentToAiExit, isEndSession } from "./ai-exit.js";
+import {
+  buildPolicyBlock,
+  enforcePolicy,
+  parseAiEnvelope,
+  phaseForIntent,
+} from "./conversation-policy.service.js";
 
 /** Core AI conversation pipeline shared by SendPulse and the AI Test Panel. */
-export async function processChat(input: ChatInput): Promise<ChatResponse> {
+export async function processChat(
+  input: ChatInput,
+  options: { applyHumanDelay?: boolean } = {},
+): Promise<ChatResponse> {
   const start = Date.now();
   const user = await sessionsService.resolveUser(input.phone);
   const session = await sessionsService.loadOrCreateSession(
@@ -39,7 +49,6 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
     input.session_id,
   );
 
-  // Persist the incoming user message immediately.
   await sessionsService.appendMessage({
     sessionId: session.id,
     role: MessageRole.USER,
@@ -48,38 +57,88 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
 
   const intent = await detectIntent(input.message);
 
-  const [topK, recentWindow, maxMemories, temperature, summarizeEvery] =
-    await Promise.all([
-      settingsService.getNumber(
-        SETTING_KEYS.RETRIEVAL_TOP_K,
-        DEFAULT_SETTINGS.retrieval_top_k,
-      ),
-      settingsService.getNumber(
-        SETTING_KEYS.RECENT_MESSAGES_WINDOW,
-        DEFAULT_SETTINGS.recent_messages_window,
-      ),
-      settingsService.getNumber(
-        SETTING_KEYS.MAX_MEMORIES,
-        DEFAULT_SETTINGS.max_memories,
-      ),
-      settingsService.getNumber(
-        SETTING_KEYS.TEMPERATURE,
-        DEFAULT_SETTINGS.temperature,
-      ),
-      settingsService.getNumber(
-        SETTING_KEYS.SUMMARIZE_EVERY_N,
-        DEFAULT_SETTINGS.summarize_every_n,
-      ),
-    ]);
+  const [
+    topK,
+    recentWindow,
+    maxMemories,
+    temperature,
+    summarizeEvery,
+    maxQualifyingQuestions,
+    maxBookingAttempts,
+    maxSalesPitches,
+    responseDelayMinMs,
+    responseDelayMaxMs,
+  ] = await Promise.all([
+    settingsService.getNumber(
+      SETTING_KEYS.RETRIEVAL_TOP_K,
+      DEFAULT_SETTINGS.retrieval_top_k,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.RECENT_MESSAGES_WINDOW,
+      DEFAULT_SETTINGS.recent_messages_window,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.MAX_MEMORIES,
+      DEFAULT_SETTINGS.max_memories,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.TEMPERATURE,
+      DEFAULT_SETTINGS.temperature,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.SUMMARIZE_EVERY_N,
+      DEFAULT_SETTINGS.summarize_every_n,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.MAX_QUALIFYING_QUESTIONS,
+      DEFAULT_SETTINGS.max_qualifying_questions,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.MAX_BOOKING_ATTEMPTS,
+      DEFAULT_SETTINGS.max_booking_attempts,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.MAX_SALES_PITCHES,
+      DEFAULT_SETTINGS.max_sales_pitches,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.RESPONSE_DELAY_MIN_MS,
+      DEFAULT_SETTINGS.response_delay_min_ms,
+    ),
+    settingsService.getNumber(
+      SETTING_KEYS.RESPONSE_DELAY_MAX_MS,
+      DEFAULT_SETTINGS.response_delay_max_ms,
+    ),
+  ]);
 
-  const [{ contextBlock, retrievedCount }, memories, recent, summary, systemBase] =
-    await Promise.all([
-      retrieveContext(input.message, topK),
-      memoryService.getTopForUser(user.id, maxMemories),
-      sessionsService.getRecentMessages(session.id, recentWindow),
-      sessionsService.getLatestSummary(session.id),
-      resolveActive(PROMPT_KEYS.SYSTEM_BASE),
-    ]);
+  const openingHours = await getOpeningHoursStatus();
+  const phase = phaseForIntent(intent);
+  const policyBlock = buildPolicyBlock({
+    session,
+    limits: {
+      maxQualifyingQuestions,
+      maxBookingAttempts,
+      maxSalesPitches,
+    },
+    phase,
+    openingHoursSummary: openingHours.summary,
+  });
+
+  const [
+    { contextBlock, retrievedCount },
+    memories,
+    recent,
+    summary,
+    systemBase,
+    salesPlaybook,
+  ] = await Promise.all([
+    retrieveContext(input.message, topK),
+    memoryService.getTopForUser(user.id, maxMemories),
+    sessionsService.getRecentMessages(session.id, recentWindow),
+    sessionsService.getLatestSummary(session.id),
+    resolveActive(PROMPT_KEYS.SYSTEM_BASE),
+    resolveActive(PROMPT_KEYS.SALES_PLAYBOOK),
+  ]);
 
   const recentMessages = recent
     .filter((m) => m.role !== MessageRole.SYSTEM)
@@ -93,11 +152,13 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
     summary: summary?.summary,
     memories,
     contextBlock,
+    policyBlock,
+    salesPlaybook: salesPlaybook.content,
     recentMessages,
     userMessage: input.message,
   });
 
-  let reply = FALLBACK_REPLY;
+  let rawReply = FALLBACK_REPLY;
   let tokensTotal = 0;
   let tokensPrompt = 0;
   let tokensCompletion = 0;
@@ -105,8 +166,13 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
   let errorMessage: string | undefined;
 
   try {
-    const completion = await getAIProvider().complete({ messages, temperature });
-    reply = completion.content || FALLBACK_REPLY;
+    const completion = await getAIProvider().complete({
+      messages,
+      temperature,
+      maxTokens: 500,
+      responseFormat: "json_object",
+    });
+    rawReply = completion.content || FALLBACK_REPLY;
     tokensTotal = completion.tokensTotal;
     tokensPrompt = completion.tokensPrompt;
     tokensCompletion = completion.tokensCompletion;
@@ -116,29 +182,48 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
     logger.error({ err }, "AI completion failed; using fallback reply");
   }
 
-  // Determine ai_exit (END_SESSION overrides intent mapping).
-  const aiExit: AiExit = isEndSession(input.message)
+  const defaultAiExit: AiExit = isEndSession(input.message)
     ? AiExit.END_SESSION
     : intentToAiExit(intent);
+
+  const policy = enforcePolicy({
+    session,
+    intent,
+    envelope: parseAiEnvelope(rawReply),
+    limits: {
+      maxQualifyingQuestions,
+      maxBookingAttempts,
+      maxSalesPitches,
+    },
+    defaultAiExit,
+  });
+
+  await prisma.session.update({
+    where: { id: session.id },
+    data: {
+      mode: policy.phase,
+      ...(policy.handoffReason ? { handoffReason: policy.handoffReason } : {}),
+      ...policy.increments,
+    },
+  });
 
   const { message: assistantMessage } = await sessionsService.appendMessage({
     sessionId: session.id,
     role: MessageRole.ASSISTANT,
-    content: reply,
+    content: policy.reply,
     intent,
-    aiExit,
+    aiExit: policy.aiExit,
     tokensUsed: tokensTotal,
   });
 
   const { version: promptVersion } = systemBase;
 
-  // Persist AI observability run.
   await prisma.aiRun.create({
     data: {
       sessionId: session.id,
       messageId: assistantMessage.id,
       intent,
-      aiExit,
+      aiExit: policy.aiExit,
       provider: getAIProvider().name,
       model,
       tokensPrompt,
@@ -151,33 +236,42 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
     },
   });
 
-  // Side-effects from routing.
-  if (aiExit === AiExit.BOOKING) {
+  if (policy.aiExit === AiExit.BOOKING) {
     await bookingsService.createFromConversation({
       userId: user.id,
       sessionId: session.id,
     });
-  } else if (aiExit === AiExit.SUPPORT) {
+  } else if (policy.aiExit === AiExit.SUPPORT) {
     await handoffService.createIfAbsent(user.id, session.id);
-  } else if (aiExit === AiExit.END_SESSION) {
+  } else if (policy.aiExit === AiExit.END_SESSION) {
     await sessionsService.closeSession(session.id).catch(() => undefined);
   }
 
-  // Async jobs (never block the reply).
   void enqueueMemoryExtraction({ userId: user.id, sessionId: session.id });
   void enqueueAnalytics({
     type: "message_processed",
     userId: user.id,
     sessionId: session.id,
-    payload: { intent, ai_exit: aiExit },
+    payload: {
+      intent,
+      ai_exit: policy.aiExit,
+      phase: policy.phase,
+      handoff_reason: policy.handoffReason,
+    },
   });
   if ((session.messageCount + 1) % summarizeEvery === 0) {
     void enqueueSummary({ sessionId: session.id });
   }
 
+  if (options.applyHumanDelay) {
+    const targetLatencyMs = randomDelay(responseDelayMinMs, responseDelayMaxMs);
+    const remainingDelayMs = targetLatencyMs - (Date.now() - start);
+    if (remainingDelayMs > 0) await sleep(remainingDelayMs);
+  }
+
   return {
-    reply,
-    ai_exit: aiExit,
+    reply: policy.reply,
+    ai_exit: policy.aiExit,
     intent: intent as Intent,
     session_id: session.id,
     metadata: {
@@ -185,4 +279,14 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
       tokens_used: tokensTotal,
     },
   };
+}
+
+function randomDelay(minMs: number, maxMs: number): number {
+  const safeMin = Math.max(0, Math.min(minMs, 8000));
+  const safeMax = Math.max(safeMin, Math.min(maxMs, 8000));
+  return Math.floor(safeMin + Math.random() * (safeMax - safeMin + 1));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

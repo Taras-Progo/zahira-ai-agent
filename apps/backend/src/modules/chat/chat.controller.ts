@@ -18,7 +18,9 @@ chatRouter.post(
   webhookOrAdmin,
   validate(chatSchema),
   asyncHandler(async (req, res) => {
-    const response = await processChat(req.body);
+    const response = await processChat(req.body, {
+      applyHumanDelay: !req.admin,
+    });
     res.json(response);
   }),
 );

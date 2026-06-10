@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const NUMERIC_KEYS = [
   "session_timeout_minutes",
@@ -25,7 +26,12 @@ export default function SettingsPage() {
   useEffect(() => {
     if (data) {
       const next: Record<string, string> = {};
-      for (const [k, v] of Object.entries(data)) next[k] = String(v);
+      for (const [k, v] of Object.entries(data)) {
+        next[k] =
+          v && typeof v === "object"
+            ? JSON.stringify(v, null, 2)
+            : String(v);
+      }
       setDraft(next);
     }
   }, [data]);
@@ -33,7 +39,23 @@ export default function SettingsPage() {
   function save() {
     const body: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(draft)) {
-      body[k] = NUMERIC_KEYS.includes(k) && v !== "" ? Number(v) : v;
+      if (NUMERIC_KEYS.includes(k) && v !== "") {
+        body[k] = Number(v);
+        continue;
+      }
+      const trimmed = v.trim();
+      if (
+        (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+        (trimmed.startsWith("[") && trimmed.endsWith("]"))
+      ) {
+        try {
+          body[k] = JSON.parse(trimmed);
+          continue;
+        } catch {
+          // Fall through and save as text so existing settings remain editable.
+        }
+      }
+      body[k] = v;
     }
     mutate.mutate(body);
   }
@@ -54,12 +76,23 @@ export default function SettingsPage() {
               .map((key) => (
                 <div key={key} className="space-y-1.5">
                   <Label>{key}</Label>
-                  <Input
-                    value={draft[key] ?? ""}
-                    onChange={(e) =>
-                      setDraft({ ...draft, [key]: e.target.value })
-                    }
-                  />
+                  {(draft[key] ?? "").trim().startsWith("{") ||
+                  (draft[key] ?? "").trim().startsWith("[") ? (
+                    <Textarea
+                      className="min-h-[160px] font-mono text-xs"
+                      value={draft[key] ?? ""}
+                      onChange={(e) =>
+                        setDraft({ ...draft, [key]: e.target.value })
+                      }
+                    />
+                  ) : (
+                    <Input
+                      value={draft[key] ?? ""}
+                      onChange={(e) =>
+                        setDraft({ ...draft, [key]: e.target.value })
+                      }
+                    />
+                  )}
                 </div>
               ))}
             <Button onClick={save} disabled={mutate.isPending}>

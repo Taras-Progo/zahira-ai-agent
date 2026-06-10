@@ -4,10 +4,15 @@ import { useAuthStore } from "@/store/auth";
 // empty base means requests go to relative `/api/...`. Locally (separate dev
 // servers) default to the backend on :4000.
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+const isLocalBrowser =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const API_URL =
   rawApiUrl !== undefined
     ? rawApiUrl.replace(/\/$/, "")
-    : "http://localhost:4000";
+    : isLocalBrowser
+      ? "http://localhost:4000"
+      : "";
 
 export class ApiError extends Error {
   code: string;
