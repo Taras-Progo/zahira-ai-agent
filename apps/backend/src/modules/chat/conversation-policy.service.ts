@@ -5,6 +5,7 @@ export const ConversationPhase = {
   SERVICE_INFO: "SERVICE_INFO",
   PRICING: "PRICING",
   BOOKING: "BOOKING",
+  AVAILABILITY: "AVAILABILITY",
   OPENING_HOURS: "OPENING_HOURS",
   SUPPORT: "SUPPORT",
   CLOSED: "CLOSED",
@@ -75,6 +76,8 @@ export function phaseForIntent(intent: Intent): ConversationPhase {
       return ConversationPhase.PRICING;
     case Intent.BOOKING:
       return ConversationPhase.BOOKING;
+    case Intent.AVAILABILITY:
+      return ConversationPhase.AVAILABILITY;
     case Intent.OPENING_HOURS:
       return ConversationPhase.OPENING_HOURS;
     case Intent.SUPPORT:

@@ -7,6 +7,7 @@ export const Intent = {
   GREETING: "greeting",
   PRICING: "pricing",
   BOOKING: "booking",
+  AVAILABILITY: "availability",
   OPENING_HOURS: "opening_hours",
   SUPPORT: "support",
   COMPLAINT: "complaint",

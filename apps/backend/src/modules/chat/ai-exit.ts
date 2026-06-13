@@ -5,6 +5,8 @@ export function intentToAiExit(intent: Intent): AiExit {
   switch (intent) {
     case Intent.BOOKING:
       return AiExit.BOOKING;
+    case Intent.AVAILABILITY:
+      return AiExit.CONTINUE;
     case Intent.SUPPORT:
     case Intent.COMPLAINT:
     case Intent.HUMAN_HANDOFF:

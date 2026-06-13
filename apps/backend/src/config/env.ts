@@ -47,6 +47,15 @@ const envSchema = z.object({
 
   SENDPULSE_WEBHOOK_SECRET: z.string().default("change_me_webhook_secret"),
 
+  LOVABLE_AI_BASE_URL: z
+    .string()
+    .url()
+    .default("https://umjdracnldnngufpfcak.supabase.co/functions/v1"),
+  ZAHIRA_AI_API_KEY: z.string().default(""),
+  AVAILABILITY_LOOKUP_ENABLED: z.coerce.boolean().default(true),
+  AVAILABILITY_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  AVAILABILITY_MAX_SLOTS: z.coerce.number().int().positive().default(3),
+
   LOG_LEVEL: z.string().default("info"),
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
 });

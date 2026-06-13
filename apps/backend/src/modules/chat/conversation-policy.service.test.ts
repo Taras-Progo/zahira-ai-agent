@@ -4,6 +4,7 @@ import {
   ConversationPhase,
   enforcePolicy,
   parseAiEnvelope,
+  phaseForIntent,
 } from "./conversation-policy.service.js";
 
 const limits = {
@@ -69,5 +70,9 @@ describe("conversation policy", () => {
 
     expect(parsed.reply).toBe("Oi!");
     expect(parsed.phase).toBe("DISCOVERY");
+  });
+
+  it("routes availability intent to the availability phase", () => {
+    expect(phaseForIntent(Intent.AVAILABILITY)).toBe(ConversationPhase.AVAILABILITY);
   });
 });

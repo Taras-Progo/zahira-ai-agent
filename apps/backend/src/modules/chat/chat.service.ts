@@ -24,6 +24,7 @@ import * as settingsService from "../system-settings/settings.service.js";
 import * as bookingsService from "../bookings/bookings.service.js";
 import * as handoffService from "../admin/handoff.service.js";
 import { getOpeningHoursStatus } from "../business-hours/opening-hours.service.js";
+import { buildAvailabilityAnswer } from "../availability/availability.service.js";
 import {
   enqueueAnalytics,
   enqueueMemoryExtraction,
@@ -35,6 +36,7 @@ import {
   enforcePolicy,
   parseAiEnvelope,
   phaseForIntent,
+  ConversationPhase,
 } from "./conversation-policy.service.js";
 
 /** Core AI conversation pipeline shared by SendPulse and the AI Test Panel. */
@@ -110,6 +112,98 @@ export async function processChat(
       DEFAULT_SETTINGS.response_delay_max_ms,
     ),
   ]);
+
+  if (intent === Intent.AVAILABILITY) {
+    const recent = await sessionsService.getRecentMessages(session.id, recentWindow);
+    const answer = await buildAvailabilityAnswer({
+      message: input.message,
+      recentMessages: recent
+        .filter((m) => m.role !== MessageRole.SYSTEM)
+        .map((m) => m.content),
+    });
+    const unavailableCodes = new Set([
+      "service_unavailable",
+      "timeout",
+      "internal_error",
+      "unauthorized",
+      "rate_limited",
+    ]);
+    const aiExit: AiExit = unavailableCodes.has(answer.errorCode ?? "")
+      ? AiExit.SUPPORT
+      : AiExit.CONTINUE;
+
+    await prisma.session.update({
+      where: { id: session.id },
+      data: {
+        mode: aiExit === AiExit.SUPPORT ? ConversationPhase.SUPPORT : ConversationPhase.AVAILABILITY,
+        ...(answer.errorCode ? { handoffReason: `availability_${answer.errorCode}` } : {}),
+      },
+    });
+
+    const { message: assistantMessage } = await sessionsService.appendMessage({
+      sessionId: session.id,
+      role: MessageRole.ASSISTANT,
+      content: answer.reply,
+      intent,
+      aiExit,
+      tokensUsed: 0,
+    });
+
+    await prisma.aiRun.create({
+      data: {
+        sessionId: session.id,
+        messageId: assistantMessage.id,
+        intent,
+        aiExit,
+        provider: "lovable",
+        model: answer.tool,
+        tokensPrompt: 0,
+        tokensCompletion: 0,
+        tokensTotal: 0,
+        retrievedDocs: 0,
+        promptVersion: 0,
+        latencyMs: Date.now() - start,
+        error: answer.errorCode,
+      },
+    });
+
+    if (aiExit === AiExit.SUPPORT) {
+      await handoffService.createIfAbsent(user.id, session.id);
+    }
+
+    void enqueueMemoryExtraction({ userId: user.id, sessionId: session.id });
+    void enqueueAnalytics({
+      type: "message_processed",
+      userId: user.id,
+      sessionId: session.id,
+      payload: {
+        intent,
+        ai_exit: aiExit,
+        phase: aiExit === AiExit.SUPPORT ? ConversationPhase.SUPPORT : ConversationPhase.AVAILABILITY,
+        availability_tool: answer.tool,
+        availability_error: answer.errorCode,
+      },
+    });
+    if ((session.messageCount + 1) % summarizeEvery === 0) {
+      void enqueueSummary({ sessionId: session.id });
+    }
+    if (options.applyHumanDelay) {
+      const targetLatencyMs = randomDelay(responseDelayMinMs, responseDelayMaxMs);
+      const remainingDelayMs = targetLatencyMs - (Date.now() - start);
+      if (remainingDelayMs > 0) await sleep(remainingDelayMs);
+    }
+
+    return {
+      reply: answer.reply,
+      ai_exit: aiExit,
+      intent,
+      session_id: session.id,
+      metadata: {
+        retrieved_documents: 0,
+        tokens_used: 0,
+      },
+    };
+  }
 
   const openingHours = await getOpeningHoursStatus();
   const phase = phaseForIntent(intent);

@@ -11,7 +11,7 @@ Seu objetivo é ajudar os clientes com informações sobre serviços, preços, a
 Responda sempre de forma concisa e use emojis com naturalidade. 😊`,
 
   INTENT_CLASSIFIER: `Classifique a mensagem do cliente em UMA das seguintes intenções e responda APENAS com a palavra exata:
-greeting, pricing, booking, opening_hours, support, complaint, menu, general_question, human_handoff.
+greeting, pricing, booking, availability, opening_hours, support, complaint, menu, general_question, human_handoff.
 Não escreva mais nada além da palavra da intenção.`,
 
   MEMORY_EXTRACTOR: `Extraia fatos importantes e duradouros sobre o cliente a partir da conversa (interesses, intenções de agendamento, preferências, histórico).
@@ -40,7 +40,8 @@ async function seedPrompts() {
     if (existing) {
       const shouldUpgradeIntent =
         key === "INTENT_CLASSIFIER" &&
-        !existing.activeVersion?.content.includes("opening_hours");
+        (!existing.activeVersion?.content.includes("opening_hours") ||
+          !existing.activeVersion?.content.includes("availability"));
       if (!shouldUpgradeIntent) continue;
 
       const last = await prisma.promptVersion.findFirst({

@@ -6,30 +6,44 @@ import { logger } from "../../lib/logger.js";
 
 const VALID_INTENTS = new Set<string>(Object.values(Intent));
 
+function normalize(message: string): string {
+  return message
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 /** Quick keyword heuristics (Portuguese) used as a fast path / fallback. */
 function heuristicIntent(message: string): Intent | null {
-  const m = message.toLowerCase();
-  if (/\b(ola|olá|oi|bom dia|boa tarde|boa noite)\b/.test(m)) {
+  const m = normalize(message);
+  if (/\b(ola|oi|bom dia|boa tarde|boa noite)\b/.test(m)) {
     return Intent.GREETING;
   }
-  if (/\b(preco|preço|quanto custa|valor|custa|tabela)\b/.test(m)) {
+  if (/\b(preco|quanto custa|valor|custa|tabela)\b/.test(m)) {
     return Intent.PRICING;
   }
   if (
-    /\b(funcionamento|abre|abrem|fecha|fecham|aberto|aberta|horario de atendimento|horário de atendimento|horario de funcionamento|horário de funcionamento)\b/.test(
+    /\b(disponivel|disponiveis|vaga|vagas|agenda|agendas|proximo horario|primeiro horario|horario livre|horarios livres|tem horario|tem vaga|encaixe|quem atende|quem faz|qual profissional|quais profissionais|profissional disponivel)\b/.test(
+      m,
+    )
+  ) {
+    return Intent.AVAILABILITY;
+  }
+  if (
+    /\b(funcionamento|abre|abrem|fecha|fecham|aberto|aberta|horario de atendimento|horario de funcionamento)\b/.test(
       m,
     )
   ) {
     return Intent.OPENING_HOURS;
   }
-  if (/\b(agendar|marcar|horario|horário|reservar|agendamento)\b/.test(m)) {
+  if (/\b(agendar|marcar|horario|reservar|agendamento)\b/.test(m)) {
     return Intent.BOOKING;
   }
-  if (/\b(reclama|pessimo|péssimo|horrivel|horrível|insatisfeito)\b/.test(m)) {
+  if (/\b(reclama|pessimo|horrivel|insatisfeito)\b/.test(m)) {
     return Intent.COMPLAINT;
   }
-  if (/\b(menu|opcoes|opções)\b/.test(m)) return Intent.MENU;
-  if (/\b(atendente|humano|pessoa|falar com alguem|falar com alguém)\b/.test(m)) {
+  if (/\b(menu|opcoes)\b/.test(m)) return Intent.MENU;
+  if (/\b(atendente|humano|pessoa|falar com alguem)\b/.test(m)) {
     return Intent.HUMAN_HANDOFF;
   }
   return null;
@@ -38,7 +52,9 @@ function heuristicIntent(message: string): Intent | null {
 /** Classify the user message into one of the supported intents. */
 export async function detectIntent(message: string): Promise<Intent> {
   const heuristic = heuristicIntent(message);
-  if (heuristic === Intent.OPENING_HOURS) return heuristic;
+  if (heuristic === Intent.OPENING_HOURS || heuristic === Intent.AVAILABILITY) {
+    return heuristic;
+  }
 
   try {
     const { content: systemPrompt } = await resolveActive(
