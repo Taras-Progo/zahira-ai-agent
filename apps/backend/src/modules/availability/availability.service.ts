@@ -320,7 +320,7 @@ async function resolveAvailabilityRequest(
 ): Promise<AvailabilityRequest> {
   const context = `${recentMessages.join("\n")}\n${message}`;
   const normalized = normalize(message);
-  const service = await resolveService(context);
+  const service = (await resolveService(message)) ?? (await resolveService(context));
   const date = parseDatePt(message);
   const professionalSlug = await resolveProfessionalSlug(message, service?.id);
 
@@ -366,6 +366,7 @@ async function resolveService(text: string): Promise<ResolvedService | undefined
     if (service.category && normalized.includes(normalize(service.category))) {
       score += 1;
     }
+    if (service.category) score += 2;
     if (score > 0 && (!best || score > best.score)) {
       best = {
         service: { id: service.id, name: service.serviceName },
@@ -381,7 +382,10 @@ async function resolveProfessionalSlug(
   serviceId?: string,
 ): Promise<string | undefined> {
   const normalized = normalize(message);
-  const explicit = normalized.match(/\b(?:com|da|do|profissional)\s+([a-z0-9-]{3,})\b/)?.[1];
+  const rawExplicit = normalized.match(
+    /\b(?:com|da|do|a|o|profissional)\s+([a-z0-9-]{3,})\b/,
+  )?.[1];
+  const explicit = normalizeProfessionalSlug(rawExplicit);
   if (!serviceId) return explicit;
   const data = await callLovable<unknown>("ai-professionals", { service_id: serviceId });
   if (!data.success) return explicit;
@@ -392,6 +396,12 @@ async function resolveProfessionalSlug(
     }
   }
   return explicit;
+}
+
+function normalizeProfessionalSlug(value?: string): string | undefined {
+  if (!value) return undefined;
+  if (value === "crislaine") return "rislaine";
+  return value;
 }
 
 async function callLovable<T>(

@@ -23,7 +23,7 @@ function heuristicIntent(message: string): Intent | null {
     return Intent.PRICING;
   }
   if (
-    /\b(disponivel|disponiveis|vaga|vagas|agenda|agendas|proximo horario|primeiro horario|horario livre|horarios livres|tem horario|tem vaga|encaixe|quem atende|quem faz|qual profissional|quais profissionais|profissional disponivel)\b/.test(
+    /\b(disponivel|disponiveis|vaga|vagas|agenda|agendas|proximo horario|primeiro horario|horario livre|horarios livres|tem horario|tem vaga|encaixe|quem atende|quem faz|qual profissional|quais profissionais|profissional disponivel|quais servicos|servicos da|servicos do|servicos a)\b/.test(
       m,
     )
   ) {
