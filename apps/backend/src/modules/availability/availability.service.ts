@@ -4,6 +4,14 @@ import { prisma } from "../../lib/prisma.js";
 const TIMEZONE = "America/Sao_Paulo";
 const FALLBACK =
   "Nao consegui verificar a agenda em tempo real agora. Posso te direcionar para o atendimento humano ou para o agendamento oficial.";
+const SERVICE_ALIASES: Record<string, string[]> = {
+  "Escova comum": ["regular brush", "common brush", "basic brush", "brush"],
+  "Escova / Modelagem": ["brush styling", "modeling brush", "blowout", "blow dry"],
+  "Corte feminino": ["female haircut", "women haircut", "womens haircut"],
+  "Corte Masculino": ["male haircut", "men haircut", "mens haircut"],
+  "Consulta Psicológica": ["psychological consultation", "psychology consultation"],
+  "Drenagem Linfática": ["lymphatic drainage", "drainage"],
+};
 
 export interface AvailabilityAnswer {
   reply: string;
@@ -359,6 +367,10 @@ async function resolveService(text: string): Promise<ResolvedService | undefined
     for (const word of name.split(/\s+/).filter((part) => part.length >= 4)) {
       if (normalized.includes(word)) score += 4;
     }
+    for (const alias of SERVICE_ALIASES[service.serviceName] ?? []) {
+      const key = normalize(alias);
+      if (normalized.includes(key)) score += key.split(/\s+/).length > 1 ? 18 : 5;
+    }
     for (const keyword of service.keywords ?? []) {
       const key = normalize(keyword);
       if (key && normalized.includes(key)) score += 3;
@@ -445,18 +457,26 @@ export function parseDatePt(message: string, now = new Date()): string | undefin
   const normalized = normalize(message);
   const explicit = normalized.match(/\b(20\d{2}-\d{2}-\d{2})\b/)?.[1];
   if (explicit) return explicit;
-  if (/\b(hoje)\b/.test(normalized)) return addDaysSaoPaulo(now, 0);
+  if (/\b(hoje|today)\b/.test(normalized)) return addDaysSaoPaulo(now, 0);
   if (/\b(depois de amanha)\b/.test(normalized)) return addDaysSaoPaulo(now, 2);
-  if (/\b(amanha)\b/.test(normalized)) return addDaysSaoPaulo(now, 1);
+  if (/\b(day after tomorrow)\b/.test(normalized)) return addDaysSaoPaulo(now, 2);
+  if (/\b(amanha|tomorrow)\b/.test(normalized)) return addDaysSaoPaulo(now, 1);
 
   const weekdays: Record<string, number> = {
     domingo: 0,
+    sunday: 0,
     segunda: 1,
+    monday: 1,
     terca: 2,
+    tuesday: 2,
     quarta: 3,
+    wednesday: 3,
     quinta: 4,
+    thursday: 4,
     sexta: 5,
+    friday: 5,
     sabado: 6,
+    saturday: 6,
   };
   const weekday = Object.entries(weekdays).find(([label]) =>
     normalized.includes(label),

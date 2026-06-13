@@ -16,6 +16,13 @@ describe("availability helpers", () => {
     expect(parseDatePt("tem vaga depois de amanha?", now)).toBe("2026-06-16");
   });
 
+  it("parses simple English relative dates", () => {
+    expect(parseDatePt("is it available tomorrow?", now)).toBe("2026-06-15");
+    expect(parseDatePt("is it available day after tomorrow?", now)).toBe(
+      "2026-06-16",
+    );
+  });
+
   it("parses explicit ISO dates", () => {
     expect(parseDatePt("tem vaga em 2026-06-20?", now)).toBe("2026-06-20");
   });
