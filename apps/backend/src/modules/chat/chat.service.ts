@@ -57,7 +57,14 @@ export async function processChat(
     content: input.message,
   });
 
-  const intent = await detectIntent(input.message);
+  let intent = await detectIntent(input.message);
+  const availabilityFollowUp =
+    intent === Intent.GENERAL_QUESTION &&
+    session.mode === ConversationPhase.AVAILABILITY &&
+    isAvailabilityFollowUp(input.message);
+  if (availabilityFollowUp) {
+    intent = Intent.AVAILABILITY;
+  }
 
   const [
     topK,
@@ -116,7 +123,9 @@ export async function processChat(
   if (intent === Intent.AVAILABILITY) {
     const recent = await sessionsService.getRecentMessages(session.id, recentWindow);
     const answer = await buildAvailabilityAnswer({
-      message: input.message,
+      message: availabilityFollowUp
+        ? `proximo horario disponivel ${input.message}`
+        : input.message,
       recentMessages: recent
         .filter((m) => m.role !== MessageRole.SYSTEM)
         .map((m) => m.content),
@@ -383,4 +392,17 @@ function randomDelay(minMs: number, maxMs: number): number {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isAvailabilityFollowUp(message: string): boolean {
+  const normalized = message
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^(sim|yes|yep|ok|okay|pode|isso|claro|proximo|next|ver proximo|ver a proxima|quero|quero sim)$/.test(
+    normalized,
+  );
 }
