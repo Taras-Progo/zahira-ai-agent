@@ -118,7 +118,10 @@ export async function processChat(
     | undefined;
   let availabilityFollowUp = false;
   if (intent === Intent.GENERAL_QUESTION && isAvailabilityFollowUp(input.message)) {
-    availabilityRecent = await sessionsService.getRecentMessages(session.id, recentWindow);
+    availabilityRecent = await sessionsService.getRecentMessages(
+      session.id,
+      Math.max(recentWindow, 8),
+    );
     availabilityFollowUp =
       session.mode === ConversationPhase.AVAILABILITY ||
       hasRecentAvailabilityPrompt(availabilityRecent);
@@ -419,18 +422,20 @@ function isAvailabilityFollowUp(message: string): boolean {
 function hasRecentAvailabilityPrompt(
   messages: Awaited<ReturnType<typeof sessionsService.getRecentMessages>>,
 ): boolean {
-  const lastAssistant = [...messages]
+  const assistantMessages = [...messages]
     .reverse()
-    .find((message) => message.role === MessageRole.ASSISTANT);
-  if (!lastAssistant) return false;
-  if (lastAssistant.intent === Intent.AVAILABILITY) return true;
-  const content = lastAssistant.content
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  return (
-    content.includes("proxima data disponivel") ||
-    content.includes("proximos horarios disponiveis") ||
-    content.includes("procurar a proxima")
-  );
+    .filter((message) => message.role === MessageRole.ASSISTANT)
+    .slice(0, 3);
+  return assistantMessages.some((message) => {
+    if (message.intent === Intent.AVAILABILITY) return true;
+    const content = message.content
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    return (
+      content.includes("proxima data disponivel") ||
+      content.includes("proximos horarios disponiveis") ||
+      content.includes("procurar a proxima")
+    );
+  });
 }
