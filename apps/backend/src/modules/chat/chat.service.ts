@@ -58,13 +58,6 @@ export async function processChat(
   });
 
   let intent = await detectIntent(input.message);
-  const availabilityFollowUp =
-    intent === Intent.GENERAL_QUESTION &&
-    session.mode === ConversationPhase.AVAILABILITY &&
-    isAvailabilityFollowUp(input.message);
-  if (availabilityFollowUp) {
-    intent = Intent.AVAILABILITY;
-  }
 
   const [
     topK,
@@ -120,8 +113,24 @@ export async function processChat(
     ),
   ]);
 
+  let availabilityRecent:
+    | Awaited<ReturnType<typeof sessionsService.getRecentMessages>>
+    | undefined;
+  let availabilityFollowUp = false;
+  if (intent === Intent.GENERAL_QUESTION && isAvailabilityFollowUp(input.message)) {
+    availabilityRecent = await sessionsService.getRecentMessages(session.id, recentWindow);
+    availabilityFollowUp =
+      session.mode === ConversationPhase.AVAILABILITY ||
+      hasRecentAvailabilityPrompt(availabilityRecent);
+    if (availabilityFollowUp) {
+      intent = Intent.AVAILABILITY;
+    }
+  }
+
   if (intent === Intent.AVAILABILITY) {
-    const recent = await sessionsService.getRecentMessages(session.id, recentWindow);
+    const recent =
+      availabilityRecent ??
+      (await sessionsService.getRecentMessages(session.id, recentWindow));
     const answer = await buildAvailabilityAnswer({
       message: availabilityFollowUp
         ? `proximo horario disponivel ${input.message}`
@@ -404,5 +413,24 @@ function isAvailabilityFollowUp(message: string): boolean {
     .trim();
   return /^(sim|yes|yep|ok|okay|pode|isso|claro|proximo|next|ver proximo|ver a proxima|quero|quero sim)$/.test(
     normalized,
+  );
+}
+
+function hasRecentAvailabilityPrompt(
+  messages: Awaited<ReturnType<typeof sessionsService.getRecentMessages>>,
+): boolean {
+  const lastAssistant = [...messages]
+    .reverse()
+    .find((message) => message.role === MessageRole.ASSISTANT);
+  if (!lastAssistant) return false;
+  if (lastAssistant.intent === Intent.AVAILABILITY) return true;
+  const content = lastAssistant.content
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return (
+    content.includes("proxima data disponivel") ||
+    content.includes("proximos horarios disponiveis") ||
+    content.includes("procurar a proxima")
   );
 }
