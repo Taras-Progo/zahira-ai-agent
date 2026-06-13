@@ -414,7 +414,7 @@ function isAvailabilityFollowUp(message: string): boolean {
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return /^(sim|yes|yep|ok|okay|pode|isso|claro|proximo|next|ver proximo|ver a proxima|quero|quero sim)$/.test(
+  return /^(sim|yes|yep|ok|okay|pode|isso|claro|proximo|next|ver proximo|ver a proxima|quero|quero sim|yes next|sim proximo|sim proxima|pode sim|ok proximo|okay next)$/.test(
     normalized,
   );
 }
