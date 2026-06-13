@@ -25,6 +25,7 @@ import * as bookingsService from "../bookings/bookings.service.js";
 import * as handoffService from "../admin/handoff.service.js";
 import { getOpeningHoursStatus } from "../business-hours/opening-hours.service.js";
 import { buildAvailabilityAnswer } from "../availability/availability.service.js";
+import { buildCategoryInfoAnswer } from "../categories/category-info.service.js";
 import {
   enqueueAnalytics,
   enqueueMemoryExtraction,
@@ -112,6 +113,72 @@ export async function processChat(
       DEFAULT_SETTINGS.response_delay_max_ms,
     ),
   ]);
+
+  const categoryAnswer = await buildCategoryInfoAnswer(input.message);
+  if (categoryAnswer) {
+    const aiExit = AiExit.CONTINUE;
+
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { mode: ConversationPhase.SERVICE_INFO },
+    });
+
+    const { message: assistantMessage } = await sessionsService.appendMessage({
+      sessionId: session.id,
+      role: MessageRole.ASSISTANT,
+      content: categoryAnswer.reply,
+      intent: Intent.GENERAL_QUESTION,
+      aiExit,
+      tokensUsed: 0,
+    });
+
+    await prisma.aiRun.create({
+      data: {
+        sessionId: session.id,
+        messageId: assistantMessage.id,
+        intent: Intent.GENERAL_QUESTION,
+        aiExit,
+        provider: "local",
+        model: categoryAnswer.tool,
+        tokensPrompt: 0,
+        tokensCompletion: 0,
+        tokensTotal: 0,
+        retrievedDocs: 0,
+        promptVersion: 0,
+        latencyMs: Date.now() - start,
+      },
+    });
+
+    void enqueueAnalytics({
+      type: "message_processed",
+      userId: user.id,
+      sessionId: session.id,
+      payload: {
+        intent: Intent.GENERAL_QUESTION,
+        ai_exit: aiExit,
+        phase: ConversationPhase.SERVICE_INFO,
+        category_tool: categoryAnswer.tool,
+        category: categoryAnswer.category,
+      },
+    });
+
+    if (options.applyHumanDelay) {
+      const targetLatencyMs = randomDelay(responseDelayMinMs, responseDelayMaxMs);
+      const remainingDelayMs = targetLatencyMs - (Date.now() - start);
+      if (remainingDelayMs > 0) await sleep(remainingDelayMs);
+    }
+
+    return {
+      reply: categoryAnswer.reply,
+      ai_exit: aiExit,
+      intent: Intent.GENERAL_QUESTION,
+      session_id: session.id,
+      metadata: {
+        retrieved_documents: 0,
+        tokens_used: 0,
+      },
+    };
+  }
 
   let availabilityRecent:
     | Awaited<ReturnType<typeof sessionsService.getRecentMessages>>
